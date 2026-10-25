@@ -1,0 +1,12 @@
+global:
+  scrape_interval: 2s
+  evaluation_interval: 2s
+
+scrape_configs:
+  - job_name: "energy_co2_engine"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["energy-api:8000"]
+        labels:
+          environment: "production"
+          service: "energy-to-co2-engine"

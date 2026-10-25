@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Energy-to-CO2 Translation Engine | Real-Time Telemetry & Emissions</title>
+  <meta name="description" content="Translates host and hardware power telemetry into unit-safe energy intervals and location-specific greenhouse gas estimates with full audit provenance.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css?v=3.0">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <!-- Ambient Frosted Glass Background Orbs -->
+  <div class="ambient-glow orb-1"></div>
+  <div class="ambient-glow orb-2"></div>
+  <div class="ambient-glow orb-3"></div>
+  <div class="ambient-glow orb-4"></div>
+
+  <div class="app-layout">
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="brand-icon-wrapper">
+          <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-title">Energy-to-CO₂ Translation Engine</h1>
+          <p class="brand-subtitle">Location-Specific Greenhouse Gas Telemetry • Model <span class="badge-code" id="model-version-tag">v1.0.0-trapezoidal</span></p>
+        </div>
+      </div>
+
+      <div class="header-status-group">
+        <div class="live-pill" id="live-indicator">
+          <span class="pulse-dot"></span>
+          <span id="live-status-text">LIVE TELEMETRY STREAM</span>
+        </div>
+        <div class="quick-nav">
+          <a href="/docs" target="_blank" class="nav-link-btn" id="link-api-docs" title="Interactive OpenAPI Documentation">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            API Docs
+          </a>
+          <a href="/metrics" target="_blank" class="nav-link-btn" id="link-prometheus" title="Prometheus Metrics Endpoint">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            /metrics
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Feature Quick Navigation Bar -->
+    <nav class="feature-nav-bar" aria-label="Feature Quick Navigation">
+      <a href="#control-banner" class="nav-pill active">⚙️ Controls</a>
+      <a href="#card-power" class="nav-pill">📊 Telemetry</a>
+      <a href="#ai-forecast-section" class="nav-pill pill-ai">🔮 P1: 24h Forecaster &amp; Green Windows</a>
+      <a href="#ai-anomaly-section" class="nav-pill pill-ai">🚨 P2: Anomaly Pipeline</a>
+      <a href="#aws-optimizer-section" class="nav-pill pill-ai">⚡ P3: Right-Sizing Engine</a>
+      <a href="#ai-copilot-section" class="nav-pill pill-ai">🤖 P4: AI Copilot</a>
+      <a href="#stress-test-section" class="nav-pill">🧪 Stress Test</a>
+      <a href="#audit-section" class="nav-pill">🔒 Audit Ledger</a>
+    </nav>
+
+    <!-- Main Dashboard Workspace -->
+    <main class="dashboard-body">
+
+      <!-- Interactive Controls Panel -->
+      <section class="control-banner" aria-label="Engine Control Parameters">
+        <div class="control-item">
+          <label for="select-region" class="control-label">Regional Grid Location</label>
+          <div class="select-wrapper">
+            <select id="select-region" class="custom-select">
+              <option value="US-EAST">US-EAST (PJM Interconnection ~380.5 g/kWh)</option>
+              <option value="US-WEST">US-WEST (CAISO California ~210.0 g/kWh)</option>
+              <option value="EU-CENTRAL">EU-CENTRAL (Germany/Continental ~315.0 g/kWh)</option>
+              <option value="EU-NORTH">EU-NORTH (Nordic Clean Hydro ~45.0 g/kWh)</option>
+              <option value="IN-SOUTH">IN-SOUTH (India CEA Baseline ~630.0 g/kWh)</option>
+              <option value="AU-EAST">AU-EAST (Australia NEM ~550.0 g/kWh)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="control-item">
+          <label for="slider-pue" class="control-label">Datacenter PUE Overhead: <span id="pue-val-display" class="highlight-val">1.20</span></label>
+          <div class="slider-row">
+            <input type="range" id="slider-pue" min="1.0" max="2.0" step="0.05" value="1.20" class="custom-range">
+            <span class="range-hint">1.0 (Ideal) to 2.0 (Legacy)</span>
+          </div>
+        </div>
+
+        <div class="control-item">
+          <label for="select-source" class="control-label">Telemetry Source Mode</label>
+          <div class="select-wrapper">
+            <select id="select-source" class="custom-select">
+              <option value="psutil">Host psutil Telemetry (Real System Load)</option>
+              <option value="simulator">Synthetic Simulator (Diurnal Sinusoid)</option>
+              <option value="rapl">Intel RAPL Hardware Emulation</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="control-item control-actions">
+          <button id="btn-refresh" class="btn btn-secondary" title="Force Refresh Metrics">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            Refresh
+          </button>
+          <button id="btn-export-audit" class="btn btn-secondary" title="Export Traceable Audit Ledger JSON">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Audit JSON
+          </button>
+        </div>
+      </section>
+
+      <!-- KPI Metrics Cards Row -->
+      <section class="kpi-grid" aria-label="Key Performance Indicators">
+        <!-- Instantaneous Power -->
+        <div class="kpi-card" id="card-power">
+          <div class="kpi-header">
+            <span class="kpi-title">Instantaneous Power</span>
+            <span class="kpi-badge badge-cyan" id="power-source-tag">psutil</span>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-number" id="val-power-watts">--</span>
+            <span class="kpi-unit">Watts</span>
+          </div>
+          <div class="kpi-footer">
+            <span class="kpi-subtext">Sampling rate: <strong id="val-sample-rate">1.0s</strong></span>
+            <span class="quality-badge quality-ok" id="val-quality-tag">QUALITY: OK</span>
+          </div>
+        </div>
+
+        <!-- Integrated Energy -->
+        <div class="kpi-card" id="card-energy">
+          <div class="kpi-header">
+            <span class="kpi-title">Integrated Energy</span>
+            <span class="kpi-badge badge-emerald">Trapezoidal Integration</span>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-number" id="val-energy-wh">--</span>
+            <span class="kpi-unit">Wh</span>
+          </div>
+          <div class="kpi-footer">
+            <span class="kpi-subtext"><span id="val-energy-kwh">--</span> kWh total</span>
+            <span class="kpi-subtext"><span id="val-intervals-count">--</span> intervals</span>
+          </div>
+        </div>
+
+        <!-- Location-Based Carbon -->
+        <div class="kpi-card" id="card-carbon">
+          <div class="kpi-header">
+            <span class="kpi-title">Location-Based CO₂e</span>
+            <span class="kpi-badge badge-purple" id="val-region-badge">US-EAST</span>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-number" id="val-carbon-grams">--</span>
+            <span class="kpi-unit">gCO₂e</span>
+          </div>
+          <div class="kpi-footer">
+            <span class="kpi-subtext"><span id="val-carbon-kg">--</span> kg CO₂e</span>
+            <span class="kpi-subtext" id="val-equivalency">~0.0 smartphone charges</span>
+          </div>
+        </div>
+
+        <!-- Grid Carbon Intensity -->
+        <div class="kpi-card" id="card-intensity">
+          <div class="kpi-header">
+            <span class="kpi-title">Grid Carbon Intensity</span>
+            <span class="kpi-badge badge-amber" id="val-factor-region">US-EAST</span>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-number" id="val-factor-intensity">--</span>
+            <span class="kpi-unit">g/kWh</span>
+          </div>
+          <div class="kpi-footer">
+            <span class="kpi-subtext truncate" id="val-factor-source" title="Grid Factor Source">EPA eGRID 2024</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Charts Section -->
+      <section class="charts-grid" aria-label="Telemetry and Carbon Visualizations">
+        <!-- Power Telemetry Chart -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <h2 class="chart-title">Power Telemetry Time Series (Watts)</h2>
+              <p class="chart-caption">Continuous power ingest stream (P1, P2 ... Pn) with unit-safe sample intervals</p>
+            </div>
+            <div class="chart-legend-custom">
+              <span class="legend-dot cyan"></span> Instantaneous Draw (W)
+            </div>
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="chart-power"></canvas>
+          </div>
+        </div>
+
+        <!-- Cumulative Energy & Carbon Chart -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <h2 class="chart-title">Cumulative Energy (Wh) & CO₂e (Grams)</h2>
+              <p class="chart-caption">Mathematical Trapezoidal Area Integration &amp; Regional Emission Attachment</p>
+            </div>
+            <div class="chart-legend-custom">
+              <span class="legend-dot emerald"></span> Energy Wh
+              <span class="legend-dot purple"></span> CO₂e Grams
+            </div>
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="chart-emissions"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Regional Intensity Comparison Section -->
+      <section class="chart-card region-comparison-card" aria-label="Regional Grid Comparison">
+        <div class="chart-header">
+          <div>
+            <h2 class="chart-title">Regional Footprint Comparison (Same Energy Consumption)</h2>
+            <p class="chart-caption">Visualizing the spatial variance of greenhouse gas emissions for current accumulated energy across global power grids</p>
+          </div>
+        </div>
+        <div class="chart-wrapper region-chart-wrapper">
+          <canvas id="chart-regions"></canvas>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- P1: AI Predictive Time-Series Forecaster & Green Windows Module -->
+      <!-- ================================================================= -->
+      <section class="experiment-card ai-feature-card" id="ai-forecast-section" aria-label="Predictive Time-Series Forecaster & Green Windows">
+        <div class="experiment-header">
+          <div class="experiment-title-group">
+            <div class="icon-pulse ai-icon-pulse">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+              </svg>
+            </div>
+            <div>
+              <div class="title-with-badge">
+                <h2 class="experiment-title">P1: Predictive Time-Series Forecaster &amp; Green Windows</h2>
+                <span class="badge-code badge-ai">Fourier Harmonic Ridge Regression</span>
+              </div>
+              <p class="experiment-desc">
+                24-hour forward projection of continuous power draw and carbon emissions with 95% confidence bounds, diurnal cycle decomposition, and automated Green Computing Window detection for zero-carbon batch scheduling.
+              </p>
+            </div>
+          </div>
+          <div class="ai-controls-top">
+            <div class="horizon-toggle-group" id="forecast-horizon-group">
+              <button class="btn-toggle" data-horizon="6">6h</button>
+              <button class="btn-toggle" data-horizon="12">12h</button>
+              <button class="btn-toggle active" data-horizon="24">24h</button>
+              <button class="btn-toggle" data-horizon="48">48h</button>
+            </div>
+            <button id="btn-refresh-forecast" class="btn btn-secondary btn-sm" title="Re-train and Update Forecast">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              Update Forecast
+            </button>
+          </div>
+        </div>
+
+        <!-- Green Window High-Impact Highlight Card -->
+        <div class="green-window-banner" id="green-window-card">
+          <div class="green-window-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2v8"/><path d="m4.93 10.93 4.24 4.24"/><path d="M2 18h8"/><path d="M20 22a8 8 0 0 0-8-8 8 8 0 0 0-8 8"/>
+              <path d="M22 6a4 4 0 0 0-7 2.5V12h6.5A4 4 0 0 0 22 6z"/>
+            </svg>
+          </div>
+          <div class="green-window-content">
+            <div class="green-window-header-row">
+              <span class="gw-tag">OPTIMAL GREEN COMPUTING WINDOW DETECTED</span>
+              <span class="gw-time-range" id="gw-time-range">Computing lowest carbon window...</span>
+            </div>
+            <h3 class="gw-title" id="gw-title">Lowest Grid Carbon Intensity Window</h3>
+            <p class="gw-desc" id="gw-recommendation">
+              Scheduling non-urgent compute workloads (CI/CD test suites, ETL pipelines, ML training) during this period minimizes Scope 2 emissions.
+            </p>
+          </div>
+          <div class="green-window-stat">
+            <span class="gw-stat-number" id="gw-savings-pct">--%</span>
+            <span class="gw-stat-label">Emissions Delta vs Peak</span>
+          </div>
+        </div>
+
+        <!-- Forecaster KPI Metric Chips -->
+        <div class="ai-kpi-row">
+          <div class="ai-chip">
+            <span class="chip-label">Validation MAE</span>
+            <span class="chip-val highlight-cyan" id="forecast-mae">-- W</span>
+          </div>
+          <div class="ai-chip">
+            <span class="chip-label">Validation RMSE</span>
+            <span class="chip-val highlight-cyan" id="forecast-rmse">-- W</span>
+          </div>
+          <div class="ai-chip">
+            <span class="chip-label">Optimal Window Power</span>
+            <span class="chip-val highlight-emerald" id="forecast-opt-power">-- W</span>
+          </div>
+          <div class="ai-chip">
+            <span class="chip-label">Optimal Carbon Rate</span>
+            <span class="chip-val highlight-purple" id="forecast-opt-carbon">-- g/hr</span>
+          </div>
+          <div class="ai-chip">
+            <span class="chip-label">Algorithm Provenance</span>
+            <span class="chip-val code-font" id="forecast-hash">e3b0...</span>
+          </div>
+        </div>
+
+        <!-- 24h Forward Predictive Canvas -->
+        <div class="chart-wrapper forecast-chart-wrapper">
+          <canvas id="chart-forecast"></canvas>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- P2: Full AI Anomaly Detection Pipeline Module -->
+      <!-- ================================================================= -->
+      <section class="experiment-card ai-feature-card" id="ai-anomaly-section" aria-label="AI Anomaly Detection Pipeline">
+        <div class="experiment-header">
+          <div class="experiment-title-group">
+            <div class="icon-pulse anomaly-icon-pulse">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+            <div>
+              <div class="title-with-badge">
+                <h2 class="experiment-title">P2: Full AI Anomaly Detection &amp; Runaway Workload Pipeline</h2>
+                <span class="badge-code badge-anomaly">Multi-Factor Real-Time Scoring</span>
+              </div>
+              <p class="experiment-desc">
+                Real-time statistical anomaly scoring combining rolling mean/std (Z-Score), instantaneous power gradient (dP/dt), and runaway envelope heuristics. Surfaces automated Prometheus alerts and mitigation actions.
+              </p>
+            </div>
+          </div>
+          <div class="anomaly-live-badge-wrapper">
+            <div class="anomaly-status-badge status-normal" id="anomaly-severity-badge">
+              <span class="status-dot"></span>
+              <span id="anomaly-status-text">NORMAL</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Real-Time Anomaly Meter & Diagnostic Banner -->
+        <div class="anomaly-meter-card">
+          <div class="anomaly-meter-top">
+            <div class="meter-info">
+              <span class="meter-label">Live Workload Anomaly Score</span>
+              <div class="meter-value-wrap">
+                <span class="meter-mega-number" id="val-anomaly-score">0.08</span>
+                <span class="meter-max">/ 1.00</span>
+              </div>
+            </div>
+            <div class="meter-diagnostic-banner" id="anomaly-diagnostic-banner">
+              <span class="diag-icon" id="anomaly-diag-icon">✓</span>
+              <span class="diag-text" id="anomaly-diag-text">Telemetry within normal operating envelope. No runaway loops detected.</span>
+            </div>
+          </div>
+
+          <!-- Color-Graded Anomaly Score Progress Bar -->
+          <div class="anomaly-bar-track">
+            <div class="anomaly-bar-fill" id="anomaly-bar-fill" style="width: 8%;"></div>
+            <div class="anomaly-threshold-marker t-suspicious" title="Suspicious Threshold (0.40)"></div>
+            <div class="anomaly-threshold-marker t-critical" title="Critical Runaway Threshold (0.72)"></div>
+          </div>
+          <div class="anomaly-bar-scale">
+            <span>0.0 Normal</span>
+            <span class="scale-mid">0.40 Suspicious Spurt</span>
+            <span class="scale-crit">0.72 Critical Runaway</span>
+            <span>1.0</span>
+          </div>
+        </div>
+
+        <!-- 4 Diagnostic Metric Cards -->
+        <div class="anomaly-kpi-grid">
+          <div class="anomaly-kpi-box">
+            <span class="kpi-micro-label">Rolling Mean (μ)</span>
+            <span class="kpi-mega-val highlight-cyan" id="val-anomaly-mean">-- W</span>
+            <span class="kpi-mini-desc">Sliding window baseline</span>
+          </div>
+          <div class="anomaly-kpi-box">
+            <span class="kpi-micro-label">Rolling StdDev (σ)</span>
+            <span class="kpi-mega-val highlight-cyan" id="val-anomaly-std">-- W</span>
+            <span class="kpi-mini-desc">Variance envelope</span>
+          </div>
+          <div class="anomaly-kpi-box">
+            <span class="kpi-micro-label">Gradient (dP/dt)</span>
+            <span class="kpi-mega-val highlight-amber" id="val-anomaly-gradient">-- W/s</span>
+            <span class="kpi-mini-desc">Instantaneous surge rate</span>
+          </div>
+          <div class="anomaly-kpi-box">
+            <span class="kpi-micro-label">Z-Score Deviation</span>
+            <span class="kpi-mega-val highlight-purple" id="val-anomaly-zscore">-- σ</span>
+            <span class="kpi-mini-desc">Standard deviations from mean</span>
+          </div>
+        </div>
+
+        <!-- Interactive Anomaly Simulation & Mitigation Trigger Controls -->
+        <div class="anomaly-actions-panel">
+          <div class="action-text-group">
+            <span class="action-panel-title">Interactive Anomaly Testbed &amp; Mitigation</span>
+            <p class="action-panel-desc">Simulate a sudden runaway CPU loop or cryptomining surge to verify real-time alert trigger, or trigger automated cooldown mitigation.</p>
+          </div>
+          <div class="anomaly-btn-group">
+            <button id="btn-simulate-spike" class="btn btn-danger-outline" title="Simulate Sudden Rogue Power Surge">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              Simulate Rogue Spike (180W)
+            </button>
+            <button id="btn-mitigate-anomaly" class="btn btn-success-outline" title="Mitigate Workload &amp; Reset Baseline">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              Mitigate Workload (Cooldown)
+            </button>
+            <div class="custom-eval-input-wrap">
+              <input type="number" id="input-eval-watts" min="0" max="1000" placeholder="Watts (e.g. 195)" class="custom-input custom-input-inline">
+              <button id="btn-eval-custom" class="btn btn-secondary btn-sm">Evaluate</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Controlled Stress-Test Experiment Module -->
+      <section class="experiment-card" id="stress-test-section" aria-label="Controlled Stress-Test Experiment">
+        <div class="experiment-header">
+          <div class="experiment-title-group">
+            <div class="icon-pulse">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            </div>
+            <div>
+              <h2 class="experiment-title">Controlled Stress-Test Experiment (Challenge 8 Milestone M4/M5)</h2>
+              <p class="experiment-desc">Run a controlled workload experiment: Baseline Idle → Traffic Spike → Sustained Heavy Load → Recovery. Compare energy & emissions transitions with audit verification.</p>
+            </div>
+          </div>
+          <div class="experiment-status-badge" id="stress-status-badge">
+            STATUS: IDLE
+          </div>
+        </div>
+
+        <div class="experiment-controls-row">
+          <div class="exp-input-group">
+            <label for="stress-duration" class="control-label">Duration</label>
+            <select id="stress-duration" class="custom-select">
+              <option value="15">15 Seconds (Quick Demo)</option>
+              <option value="30" selected>30 Seconds (Standard MVP)</option>
+              <option value="60">60 Seconds (Extended)</option>
+            </select>
+          </div>
+
+          <div class="exp-input-group">
+            <label for="stress-profile" class="control-label">Load Profile</label>
+            <select id="stress-profile" class="custom-select">
+              <option value="tiered" selected>Tiered (Idle -> Spike -> Heavy -> Cooldown)</option>
+              <option value="spike">Impulse Traffic Surge</option>
+              <option value="constant">Constant Peak Saturation</option>
+            </select>
+          </div>
+
+          <div class="exp-input-group">
+            <label for="stress-target" class="control-label">Peak Target Load</label>
+            <select id="stress-target" class="custom-select">
+              <option value="75">75% Load Target</option>
+              <option value="85" selected>85% Load Target</option>
+              <option value="98">98% Heavy Stress</option>
+            </select>
+          </div>
+
+          <div class="exp-action-group">
+            <button id="btn-start-stress" class="btn btn-primary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Run Stress Experiment
+            </button>
+          </div>
+        </div>
+
+        <!-- Real-time Progress Bar & Stage Indicator -->
+        <div class="stress-progress-container" id="stress-progress-panel" style="display: none;">
+          <div class="stage-flow">
+            <span class="stage-step" id="stage-step-1">1. Baseline Idle</span>
+            <span class="stage-arrow">→</span>
+            <span class="stage-step" id="stage-step-2">2. Traffic Spike</span>
+            <span class="stage-arrow">→</span>
+            <span class="stage-step" id="stage-step-3">3. Sustained Load</span>
+            <span class="stage-arrow">→</span>
+            <span class="stage-step" id="stage-step-4">4. Cooldown</span>
+          </div>
+
+          <div class="progress-track">
+            <div class="progress-fill" id="stress-progress-bar" style="width: 0%;"></div>
+          </div>
+
+          <div class="stress-telemetry-live-row">
+            <span>Stage: <strong id="stress-live-stage" class="highlight-cyan">STAGE_1_BASELINE_IDLE</strong></span>
+            <span>Elapsed: <strong id="stress-live-elapsed">0.0s</strong> / <span id="stress-live-total">30s</span></span>
+            <span>Current Power: <strong id="stress-live-power">34.2 W</strong></span>
+            <span>Load: <strong id="stress-live-load">15.0%</strong></span>
+          </div>
+        </div>
+
+        <!-- Post-Experiment Comparative Results Card -->
+        <div class="experiment-results-card" id="stress-results-card" style="display: none;">
+          <h3 class="results-heading">Experiment Comparative Impact Report</h3>
+          <div class="results-stats-grid">
+            <div class="res-stat">
+              <span class="res-stat-label">Baseline Idle Power</span>
+              <span class="res-stat-val" id="res-baseline-w">35.4 W</span>
+            </div>
+            <div class="res-stat">
+              <span class="res-stat-label">Peak Load Power</span>
+              <span class="res-stat-val highlight-amber" id="res-peak-w">138.2 W</span>
+            </div>
+            <div class="res-stat">
+              <span class="res-stat-label">Power Draw Increase</span>
+              <span class="res-stat-val highlight-purple" id="res-increase-pct">+290.4%</span>
+            </div>
+            <div class="res-stat">
+              <span class="res-stat-label">Total Energy Consumed</span>
+              <span class="res-stat-val highlight-emerald" id="res-total-wh">0.824 Wh</span>
+            </div>
+            <div class="res-stat">
+              <span class="res-stat-label">Greenhouse Gas Emitted</span>
+              <span class="res-stat-val highlight-purple" id="res-total-gco2e">0.376 gCO₂e</span>
+            </div>
+          </div>
+          <p class="results-provenance-note" id="res-audit-note">
+            State transition audited and recorded to ledger with cryptographic provenance hash.
+          </p>
+        </div>
+      </section>
+
+      <!-- AWS Cloud Carbon Optimizer & Region Shifter Module -->
+      <section class="experiment-card aws-optimizer-card" id="aws-optimizer-section" aria-label="AWS Cloud Carbon Optimizer">
+        <div class="experiment-header">
+          <div class="experiment-title-group">
+            <div class="icon-pulse aws-icon-badge">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+              </svg>
+            </div>
+            <div>
+              <div class="title-with-badge">
+                <h2 class="experiment-title">AWS Cloud Carbon Optimizer &amp; Regional Workload Shifter</h2>
+                <span class="badge-code badge-aws">AWS EC2 CloudWatch Ready</span>
+              </div>
+              <p class="experiment-desc">
+                Model real-world EC2 instance power envelopes (Intel Xeon, AWS Graviton3 ARM, NVIDIA GPUs), calculate spatial carbon arbitrage across AWS global regions, and discover instant Scope 2 green-shifting reductions.
+              </p>
+            </div>
+          </div>
+          <div class="aws-status-tag">
+            <span class="pulse-dot-aws"></span>
+            <span>MODEL: NON-LINEAR TDP DYNAMICS</span>
+          </div>
+        </div>
+
+        <!-- AWS Controls Grid -->
+        <div class="aws-controls-grid">
+          <div class="exp-input-group">
+            <label for="aws-select-instance" class="control-label">EC2 Instance Type</label>
+            <select id="aws-select-instance" class="custom-select">
+              <option value="c6i.4xlarge" selected>c6i.4xlarge (16 vCPU, 32GB, Intel Ice Lake 220W TDP)</option>
+              <option value="c7g.4xlarge">c7g.4xlarge (16 vCPU, 32GB, AWS Graviton3 ARM 115W TDP)</option>
+              <option value="g5.2xlarge">g5.2xlarge (8 vCPU, 32GB, NVIDIA A10G GPU 310W TDP)</option>
+              <option value="t4g.xlarge">t4g.xlarge (4 vCPU, 16GB, AWS Graviton2 ARM 32W TDP)</option>
+              <option value="t3.medium">t3.medium (2 vCPU, 4GB, Intel Xeon Burstable 35W TDP)</option>
+              <option value="m6a.4xlarge">m6a.4xlarge (16 vCPU, 64GB, AMD EPYC Milan 240W TDP)</option>
+              <option value="p4de.24xlarge">p4de.24xlarge (96 vCPU, 1152GB, 8x NVIDIA A100 3300W TDP)</option>
+            </select>
+          </div>
+
+          <div class="exp-input-group">
+            <label for="aws-instance-count" class="control-label">Instance Fleet Size: <strong id="aws-fleet-count-val" class="highlight-cyan">5 Nodes</strong></label>
+            <input type="range" id="aws-instance-count" min="1" max="50" value="5" class="custom-range">
+          </div>
+
+          <div class="exp-input-group">
+            <label for="aws-cpu-util" class="control-label">Average CPU Utilization: <strong id="aws-cpu-util-val" class="highlight-amber">25%</strong></label>
+            <input type="range" id="aws-cpu-util" min="5" max="100" step="5" value="25" class="custom-range">
+          </div>
+
+          <div class="exp-input-group">
+            <label for="aws-peak-cpu" class="control-label">Observed Peak CPU: <strong id="aws-peak-cpu-val" class="highlight-rose">45%</strong></label>
+            <input type="range" id="aws-peak-cpu" min="10" max="100" step="5" value="45" class="custom-range">
+          </div>
+
+          <div class="exp-input-group">
+            <label for="aws-source-region" class="control-label">Current AWS Region</label>
+            <select id="aws-source-region" class="custom-select">
+              <option value="us-east-1" selected>us-east-1 (N. Virginia - 380.5 g/kWh)</option>
+              <option value="ap-south-1">ap-south-1 (Mumbai - 630.0 g/kWh)</option>
+              <option value="ap-southeast-2">ap-southeast-2 (Sydney - 550.0 g/kWh)</option>
+              <option value="eu-central-1">eu-central-1 (Frankfurt - 315.0 g/kWh)</option>
+              <option value="us-west-2">us-west-2 (Oregon - 180.0 g/kWh)</option>
+              <option value="eu-north-1">eu-north-1 (Stockholm - 45.0 g/kWh)</option>
+            </select>
+          </div>
+
+          <div class="exp-input-group">
+            <label for="aws-target-region" class="control-label">Green Target AWS Region</label>
+            <select id="aws-target-region" class="custom-select">
+              <option value="eu-north-1" selected>eu-north-1 (Stockholm Clean Hydro - 45.0 g/kWh)</option>
+              <option value="us-west-2">us-west-2 (Oregon Bonneville Hydro - 180.0 g/kWh)</option>
+              <option value="eu-central-1">eu-central-1 (Frankfurt - 315.0 g/kWh)</option>
+              <option value="us-east-1">us-east-1 (N. Virginia - 380.5 g/kWh)</option>
+            </select>
+          </div>
+
+          <div class="exp-action-group aws-actions-row">
+            <button id="btn-ai-rightsizing" class="btn btn-primary" title="Evaluate Microarchitectural TDP and Right-Size Workload">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              P3: AI Right-Size
+            </button>
+            <button id="btn-aws-optimize" onclick="window.runAwsOptimization(true)" class="btn btn-secondary" title="Calculate Regional Carbon Arbitrage">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              Region Shifter
+            </button>
+            <button id="btn-aws-inject" onclick="window.injectAwsTelemetry()" class="btn btn-secondary" title="Inject simulated EC2 telemetry into live engine">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              Stream
+            </button>
+          </div>
+        </div>
+
+        <!-- AWS Real-Time Optimization Outcome Card -->
+        <div class="aws-outcome-card" id="aws-outcome-panel">
+          <!-- Green Shifting Highlight Banner -->
+          <div class="aws-banner-highlight" id="aws-banner-container">
+            <div class="banner-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <div class="banner-content">
+              <h3 class="banner-title" id="aws-savings-title">Green Shifting Arbitrage: -88.2% Carbon Reduction Available</h3>
+              <p class="banner-desc" id="aws-savings-desc">
+                Migrating this 5-node c6i.4xlarge cluster from US East (N. Virginia) to Europe (Stockholm) eliminates 142.3 kg CO₂e per month with identical compute performance.
+              </p>
+            </div>
+            <div class="banner-stat">
+              <span class="stat-big-val" id="aws-pct-reduction">-88.2%</span>
+              <span class="stat-sub">Scope 2 Delta</span>
+            </div>
+          </div>
+
+          <!-- Comparative Stat Grid -->
+          <div class="aws-kpi-grid">
+            <div class="aws-kpi-box">
+              <span class="kpi-micro-label">Fleet Power Draw</span>
+              <span class="kpi-mega-val highlight-cyan" id="aws-kpi-fleet-power">882.5 W</span>
+              <span class="kpi-mini-desc" id="aws-kpi-single-power">176.5 W per node</span>
+            </div>
+            <div class="aws-kpi-box">
+              <span class="kpi-micro-label">Monthly Energy</span>
+              <span class="kpi-mega-val highlight-emerald" id="aws-kpi-monthly-kwh">740.8 kWh</span>
+              <span class="kpi-mini-desc">at 1.15 datacenter PUE</span>
+            </div>
+            <div class="aws-kpi-box">
+              <span class="kpi-micro-label">Current Region (us-east-1)</span>
+              <span class="kpi-mega-val highlight-rose" id="aws-kpi-source-emissions">281.9 kg</span>
+              <span class="kpi-mini-desc">CO₂e / month</span>
+            </div>
+            <div class="aws-kpi-box">
+              <span class="kpi-micro-label">Target Region (eu-north-1)</span>
+              <span class="kpi-mega-val highlight-emerald" id="aws-kpi-target-emissions">33.3 kg</span>
+              <span class="kpi-mini-desc">CO₂e / month</span>
+            </div>
+            <div class="aws-kpi-box">
+              <span class="kpi-micro-label">Net Carbon Saved</span>
+              <span class="kpi-mega-val highlight-purple" id="aws-kpi-saved-kg">248.6 kg</span>
+              <span class="kpi-mini-desc" id="aws-kpi-annual-tons">2.98 Metric Tons/yr</span>
+            </div>
+          </div>
+
+          <!-- Real World Equivalents -->
+          <div class="aws-equivalents-row">
+            <div class="eq-badge">
+              <span class="eq-icon">🌲</span>
+              <span>Offset: <strong id="aws-trees-val">11.4</strong> mature trees planted</span>
+            </div>
+            <div class="eq-badge">
+              <span class="eq-icon">🚗</span>
+              <span>Equivalent: <strong id="aws-miles-val">621.5</strong> car miles avoided</span>
+            </div>
+            <div class="eq-badge">
+              <span class="eq-icon">📱</span>
+              <span>Savings: <strong id="aws-phones-val">71,028</strong> smartphone charges</span>
+            </div>
+            <div class="eq-badge hash-badge">
+              <span class="eq-icon">🔒</span>
+              <span>SHA-256 Provenance: <strong id="aws-hash-val" class="code-font">e3b0c442...</strong></span>
+            </div>
+          </div>
+
+          <!-- P3: AI Hardware Right-Sizing Recommendation Card -->
+          <div class="rightsizing-card" id="rightsizing-panel" style="display: none;">
+            <div class="rs-header">
+              <div class="rs-title-wrap">
+                <span class="badge-code badge-ai">P3: Microarchitectural Right-Sizing</span>
+                <h3 class="rs-title" id="rs-title">Workload Architecture Optimization: c6i.4xlarge → c7g.4xlarge</h3>
+              </div>
+              <span class="rs-headroom-badge" id="rs-headroom-badge">74.5% Headroom Trimmed</span>
+            </div>
+            <p class="rs-reasoning" id="rs-reasoning">
+              Workload observed at 25% avg CPU with peak under 45%. Migrating from Intel Ice Lake x86 to AWS Graviton3 ARM eliminates 105W TDP overhead per node with zero performance degradation.
+            </p>
+            <div class="rs-metrics-grid">
+              <div class="rs-metric-item">
+                <span class="rs-m-label">Target Architecture</span>
+                <span class="rs-m-val highlight-cyan" id="rs-target-arch">Graviton3 ARM</span>
+                <span class="rs-m-sub" id="rs-target-inst">c7g.4xlarge</span>
+              </div>
+              <div class="rs-metric-item">
+                <span class="rs-m-label">Fleet Power Trimmed</span>
+                <span class="rs-m-val highlight-emerald" id="rs-power-saved">-525.0 W</span>
+                <span class="rs-m-sub" id="rs-target-power">357.5 W target</span>
+              </div>
+              <div class="rs-metric-item">
+                <span class="rs-m-label">Same-Region Carbon Cut</span>
+                <span class="rs-m-val highlight-purple" id="rs-same-region-cut">-48.2%</span>
+                <span class="rs-m-sub" id="rs-same-region-kg">165.2 kg CO₂e/mo saved</span>
+              </div>
+              <div class="rs-metric-item">
+                <span class="rs-m-label">Combined with Green Grid</span>
+                <span class="rs-m-val highlight-emerald" id="rs-combo-cut">-93.8%</span>
+                <span class="rs-m-sub" id="rs-combo-kg">321.4 kg CO₂e/mo saved</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- P4: AI Sustainability Copilot (Natural Language Assistant) -->
+      <!-- ================================================================= -->
+      <section class="experiment-card ai-feature-card" id="ai-copilot-section" aria-label="AI Sustainability Copilot">
+        <div class="experiment-header">
+          <div class="experiment-title-group">
+            <div class="icon-pulse copilot-icon-pulse">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+            </div>
+            <div>
+              <div class="title-with-badge">
+                <h2 class="experiment-title">P4: AI Sustainability Copilot (Natural Language Assistant)</h2>
+                <span class="badge-code badge-copilot">Autonomous ESG Intelligence</span>
+              </div>
+              <p class="experiment-desc">
+                Executive-ready conversational assistant. Ask natural-language questions about emissions spikes, calculate GHG Protocol Scope 2 compliance reports, or request automated decarbonization roadmaps.
+              </p>
+            </div>
+          </div>
+          <div class="copilot-status-tag">
+            <span class="copilot-sparkle">✨</span>
+            <span>READY FOR INQUIRIES</span>
+          </div>
+        </div>
+
+        <!-- Quick Prompt Suggestion Pills -->
+        <div class="copilot-prompts-row">
+          <span class="prompts-label">Quick Prompts:</span>
+          <button class="copilot-pill" data-prompt="Generate GHG Protocol Scope 2 Executive Report">
+            📋 Scope 2 ESG Report
+          </button>
+          <button class="copilot-pill" data-prompt="Why did power emissions spike recently?">
+            🔍 Investigate Spikes
+          </button>
+          <button class="copilot-pill" data-prompt="What are our top decarbonization and right-sizing recommendations?">
+            💡 Decarbonization Plan
+          </button>
+          <button class="copilot-pill" data-prompt="What is our current carbon status and energy footprint?">
+            📊 Energy Footprint
+          </button>
+          <button class="copilot-pill" data-prompt="How can we optimize our AWS cloud instances with Graviton?">
+            ☁️ AWS Graviton ROI
+          </button>
+        </div>
+
+        <!-- Chat Input Form -->
+        <div class="copilot-input-container">
+          <input type="text" id="copilot-input" class="copilot-input" placeholder="Ask the Copilot: e.g. 'Generate GHG Protocol Scope 2 Executive Report' or 'Why did power spike?'..." />
+          <button id="btn-copilot-send" class="btn btn-primary btn-copilot">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            Ask Copilot
+          </button>
+        </div>
+
+        <!-- Copilot Response Card -->
+        <div class="copilot-response-container" id="copilot-response-card" style="display: none;">
+          <div class="copilot-response-header">
+            <div class="copilot-response-title-group">
+              <span class="copilot-avatar">🤖</span>
+              <div>
+                <h3 class="copilot-response-title" id="copilot-response-title">Executive Scope 2 Analysis</h3>
+                <span class="copilot-timestamp" id="copilot-response-timestamp">Generated just now • Location-Based Accounting</span>
+              </div>
+            </div>
+            <div class="copilot-response-actions">
+              <button id="btn-copy-copilot" class="btn btn-secondary btn-sm" title="Copy response to clipboard">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                Copy Text
+              </button>
+            </div>
+          </div>
+
+          <div class="copilot-markdown-body" id="copilot-markdown-content">
+            <!-- Dynamic Markdown renders here -->
+          </div>
+
+          <!-- Suggested Actions Checklist -->
+          <div class="copilot-suggested-actions" id="copilot-actions-wrapper" style="display: none;">
+            <h4 class="actions-heading">Recommended Decarbonization Next Steps:</h4>
+            <ul class="actions-list" id="copilot-actions-list">
+              <!-- Dynamically populated -->
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Audit Ledger & Mathematical Provenance Drawer -->
+      <section class="audit-section" aria-label="Audit Ledger and Cryptographic Provenance">
+        <div class="audit-header">
+          <div>
+            <h2 class="chart-title">Verifiable Audit Ledger &amp; Calculation Provenance</h2>
+            <p class="chart-caption">Deterministic traceability: PowerSample → EnergyInterval → Regional Emission Factor → PUE Overhead → SHA-256 Provenance Hash</p>
+          </div>
+          <div class="audit-tag">
+            <span id="audit-count">-- entries</span>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table class="data-table" id="audit-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Timestamp (UTC)</th>
+                <th>Event Type</th>
+                <th>Host</th>
+                <th>Details / Calculation Provenance</th>
+                <th>Payload Hash</th>
+              </tr>
+            </thead>
+            <tbody id="audit-table-body">
+              <tr>
+                <td colspan="6" class="text-center loading-row">Streaming audit events...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Mathematical Formulation & System Architecture Reference Footer -->
+      <footer class="math-architecture-footer">
+        <div class="math-box">
+          <h3 class="footer-box-title">Core Mathematical Policies</h3>
+          <p class="formula-line">
+            <code>Wh = ((P₁ + P₂) / 2) × (Δt / 3600)</code> • <code>kWh = Wh / 1000</code>
+          </p>
+          <p class="formula-line">
+            <code>gCO₂e = kWh × PUE × Regional_Factor(gCO₂e/kWh)</code>
+          </p>
+          <p class="formula-desc">
+            Unit-safe separation of instantaneous Watts from time-integrated Watt-hours. Discontinuous sample intervals exceeding 15.0s trigger explicit <code>GAP_DETECTED</code> isolation preventing spurious energy attribution.
+          </p>
+        </div>
+
+        <div class="math-box">
+          <h3 class="footer-box-title">Reliability &amp; Accuracy Guarantees</h3>
+          <ul class="guarantee-list">
+            <li><strong>Traceability:</strong> Every carbon estimate binds the model version, factor timestamp, and input interval.</li>
+            <li><strong>Idempotency:</strong> Mutations accept <code>Idempotency-Key</code> preventing ledger duplicate writes.</li>
+            <li><strong>Prometheus:</strong> Production metrics scraped at <code>/metrics</code> for enterprise Grafana alerting.</li>
+          </ul>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <script src="/static/dashboard.js?v=3.0"></script>
+</body>
+</html>

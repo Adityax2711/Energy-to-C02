@@ -1,0 +1,228 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": true,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "title": "Instantaneous Telemetry & Grid Metrics",
+      "type": "row"
+    },
+    {
+      "id": 1,
+      "title": "Instantaneous Power Draw",
+      "type": "gauge",
+      "gridPos": { "h": 7, "w": 6, "x": 0, "y": 1 },
+      "targets": [
+        {
+          "expr": "energy_power_watts",
+          "legendFormat": "{{host}} ({{source}})",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "watt",
+          "min": 0,
+          "max": 200,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "#EAB839", "value": 80 },
+              { "color": "red", "value": 140 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Total Integrated Energy",
+      "type": "stat",
+      "gridPos": { "h": 7, "w": 6, "x": 6, "y": 1 },
+      "targets": [
+        {
+          "expr": "energy_integrated_watthours_total",
+          "legendFormat": "{{host}} Wh",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "watth",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null },
+              { "color": "green", "value": 10 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Total Carbon Emissions",
+      "type": "stat",
+      "gridPos": { "h": 7, "w": 6, "x": 12, "y": 1 },
+      "targets": [
+        {
+          "expr": "carbon_emissions_grams_total",
+          "legendFormat": "{{region}} ({{model_version}})",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "massg",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "purple", "value": null },
+              { "color": "orange", "value": 50 },
+              { "color": "red", "value": 200 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Grid Carbon Intensity",
+      "type": "stat",
+      "gridPos": { "h": 7, "w": 6, "x": 18, "y": 1 },
+      "targets": [
+        {
+          "expr": "carbon_grid_intensity_gco2e_per_kwh",
+          "legendFormat": "{{region}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "g/kWh",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 250 },
+              { "color": "red", "value": 500 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 8 },
+      "id": 101,
+      "title": "Time-Series Telemetry & Integration Curves",
+      "type": "row"
+    },
+    {
+      "id": 5,
+      "title": "Host Power Telemetry (Watts)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 9 },
+      "targets": [
+        {
+          "expr": "energy_power_watts",
+          "legendFormat": "{{host}} - {{type}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 15
+          },
+          "unit": "watt"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Cumulative Carbon & Energy Integration",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 9 },
+      "targets": [
+        {
+          "expr": "carbon_emissions_grams_total",
+          "legendFormat": "{{host}} - {{region}} (gCO2e)",
+          "refId": "A"
+        },
+        {
+          "expr": "energy_integrated_watthours_total",
+          "legendFormat": "{{host}} - Energy (Wh)",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth"
+          }
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Telemetry Health & Sample Quality",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 17 },
+      "targets": [
+        {
+          "expr": "rate(telemetry_samples_total[1m])",
+          "legendFormat": "Samples/sec ({{quality}})",
+          "refId": "A"
+        },
+        {
+          "expr": "telemetry_gaps_total",
+          "legendFormat": "Detected Gaps ({{host}})",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Emission Rate (Grams / Hour)",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 17 },
+      "targets": [
+        {
+          "expr": "carbon_emission_rate_grams_per_hour",
+          "legendFormat": "{{host}} - {{region}} rate",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "massg/h",
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 20
+          }
+        }
+      }
+    }
+  ],
+  "refresh": "2s",
+  "schemaVersion": 39,
+  "tags": ["energy", "carbon", "sustainability", "telemetry", "prometheus"],
+  "time": { "from": "now-15m", "to": "now" },
+  "timezone": "browser",
+  "title": "Energy-to-CO2 Translation Engine Dashboard",
+  "uid": "energy-co2-engine"
+}

@@ -1,0 +1,34 @@
+"""
+Core Application Configuration
+"""
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing import Optional
+
+
+class Settings(BaseSettings):
+    PROJECT_NAME: str = "Energy-to-CO2 Translation Engine"
+    VERSION: str = "1.0.0"
+    MODEL_VERSION: str = "v1.0.0-trapezoidal-traceable"
+    
+    # Database
+    DATABASE_URL: str = "sqlite:///./energy_to_co2.db"
+    
+    # Telemetry and Integration Policies
+    DEFAULT_HOST: str = "node-alpha-01"
+    DEFAULT_REGION: str = "US-EAST"
+    DEFAULT_PUE: float = 1.20  # Power Usage Effectiveness datacenter overhead
+    MAX_GAP_SECONDS: float = 15.0  # Gaps > 15 seconds trigger GAP_DETECTED quality
+    MIN_INTERVAL_SECONDS: float = 0.05  # Prevent absurdly small intervals causing division anomalies
+    
+    # Background Telemetry Collection
+    ENABLE_BACKGROUND_COLLECTOR: bool = True
+    BACKGROUND_SAMPLE_INTERVAL_SECONDS: float = 2.0
+    SIMULATED_POWER_ENABLED: bool = False  # If false and psutil is present, reads psutil; else simulation
+    
+    # Carbon Calculation Settings
+    CARBON_CACHE_SECONDS: int = 60
+    
+    model_config = SettingsConfigDict(env_file=".env", extra="allow")
+
+
+settings = Settings()
