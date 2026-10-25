@@ -15,6 +15,7 @@ from app.services.ai_anomaly_detector import AiPowerAnomalyDetector
 from app.services.ai_rightsizing import AiHardwareRightSizer
 from app.core.config import settings
 from app.core.provenance import compute_payload_hash
+from app.core.security import sanitize_input_text
 
 
 class AiSustainabilityCopilot:
@@ -34,7 +35,8 @@ class AiSustainabilityCopilot:
         Parse natural-language query intent, query live telemetry & audit ledgers,
         and generate structured, human-readable insights.
         """
-        q_lower = query.lower().strip()
+        clean_query = sanitize_input_text(query or "")
+        q_lower = clean_query.lower().strip()
         region = region or settings.DEFAULT_REGION
         pue = pue or settings.DEFAULT_PUE
 

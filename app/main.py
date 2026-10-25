@@ -22,6 +22,7 @@ from app.services.telemetry_collector import TelemetryCollectorService
 from app.models.schemas import PowerSampleCreate
 from app.models.database_models import EmissionFactor
 from app.api.metrics import GAUGE_CARBON_INTENSITY
+from app.core.security import SecurityHeadersMiddleware, RateLimitMiddleware
 
 
 # Background Telemetry Worker
@@ -105,6 +106,12 @@ app = FastAPI(
     description="Translates host & hardware power telemetry into unit-safe energy intervals and traceable location-specific greenhouse gas estimates.",
     lifespan=lifespan
 )
+
+# OWASP Defense-in-Depth Security Headers
+app.add_middleware(SecurityHeadersMiddleware)
+
+# Sliding-Window Rate Limiting (DDoS & Abuse Protection)
+app.add_middleware(RateLimitMiddleware)
 
 # CORS
 app.add_middleware(

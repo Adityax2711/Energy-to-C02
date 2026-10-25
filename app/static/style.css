@@ -1870,7 +1870,10 @@ body {
 }
 
 .copilot-sparkle {
-  animation: floatOrb 3s ease-in-out infinite alternate;
+  display: inline-block;
+  font-size: 13px;
+  line-height: 1;
+  vertical-align: middle;
 }
 
 .copilot-prompts-row {
@@ -2091,6 +2094,322 @@ body {
     border-left: none;
     padding-left: 0;
     align-items: flex-start;
+  }
+}
+
+/* ==========================================================================
+   Security & Compliance Control Center
+   ========================================================================== */
+.pill-security {
+  background: rgba(14, 165, 233, 0.15) !important;
+  color: #38BDF8 !important;
+  border-color: rgba(56, 189, 248, 0.3) !important;
+}
+
+.pill-security:hover {
+  background: rgba(14, 165, 233, 0.3) !important;
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.4) !important;
+}
+
+.security-section {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 8px 32px rgba(14, 165, 233, 0.08);
+}
+
+.security-header-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 20px;
+}
+
+.security-title-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.security-icon-badge {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(16, 185, 129, 0.2));
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #38BDF8;
+}
+
+.security-grade-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 8px 18px;
+  border-radius: var(--radius-md);
+}
+
+.security-shield-icon {
+  font-size: 24px;
+}
+
+.grade-label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: #94A3B8;
+  text-transform: uppercase;
+}
+
+.grade-val {
+  font-size: 15px;
+  font-weight: 800;
+  color: #34D399;
+}
+
+.sec-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.sec-metric-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.sec-metric-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.sec-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.sec-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.dot-green {
+  background: #10B981;
+  color: #10B981;
+}
+
+.sec-card-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #94A3B8;
+  text-transform: uppercase;
+}
+
+.sec-card-val {
+  font-size: 18px;
+  font-weight: 700;
+  color: #F8FAFC;
+  margin-bottom: 4px;
+}
+
+.sec-card-sub {
+  font-size: 11px;
+  color: #64748B;
+  line-height: 1.4;
+}
+
+.sec-ops-workspace {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.sec-op-card {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.sec-op-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.sec-op-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #F8FAFC;
+  margin: 0;
+}
+
+.sec-op-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: rgba(56, 189, 248, 0.15);
+  color: #38BDF8;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.sec-op-desc {
+  font-size: 13px;
+  color: #94A3B8;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.sec-scan-result {
+  background: rgba(10, 15, 30, 0.8);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.scan-status-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.scan-label {
+  color: #94A3B8;
+}
+
+.scan-value {
+  font-weight: 600;
+  color: #F8FAFC;
+}
+
+.scan-value.status-pass {
+  color: #34D399;
+}
+
+.threat-test-input-wrapper {
+  margin-bottom: 10px;
+}
+
+.threat-input {
+  width: 100%;
+  background: rgba(10, 15, 30, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-sm);
+  color: #F8FAFC;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.threat-input:focus {
+  outline: none;
+  border-color: #38BDF8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+}
+
+.threat-quick-pills {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.threat-pill {
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94A3B8;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.threat-pill:hover {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38BDF8;
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.threat-output-box {
+  margin-top: 14px;
+  background: rgba(10, 15, 30, 0.9);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  animation: fadeIn 0.3s ease;
+}
+
+.threat-status-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.threat-badge {
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(16, 185, 129, 0.2);
+  color: #34D399;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.threat-time {
+  font-size: 11px;
+  color: #64748B;
+}
+
+.threat-sanitized-preview {
+  font-size: 12px;
+  color: #CBD5E1;
+  word-break: break-all;
+}
+
+.threat-sanitized-preview code {
+  background: rgba(0, 0, 0, 0.4);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #38BDF8;
+}
+
+@media (max-width: 900px) {
+  .sec-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .sec-ops-workspace {
+    grid-template-columns: 1fr;
   }
 }
 

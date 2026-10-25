@@ -28,6 +28,12 @@ class Settings(BaseSettings):
     # Carbon Calculation Settings
     CARBON_CACHE_SECONDS: int = 60
     
+    # Security & Protection Settings
+    SECURITY_ENABLED: bool = False  # Set True to enforce X-API-Key validation on protected endpoints
+    API_KEY: str = "secret-telemetry-key-2026"
+    RATE_LIMIT_ENABLED: bool = True
+    RATE_LIMIT_PER_MINUTE: int = 180
+    
     model_config = SettingsConfigDict(env_file=".env", extra="allow")
 
 
