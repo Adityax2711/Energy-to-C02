@@ -70,23 +70,30 @@ def background_sampler_loop():
         time.sleep(settings.BACKGROUND_SAMPLE_INTERVAL_SECONDS)
 
 
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application startup and shutdown lifecycle management."""
     global _bg_thread
 
-    # 1. Initialize DB Schema
-    Base.metadata.create_all(bind=engine)
+    try:
+        # 1. Initialize DB Schema
+        Base.metadata.create_all(bind=engine)
 
-    # 2. Seed default factors
-    db = SessionLocal()
-    EmissionsCalculator.seed_default_factors_if_needed(db)
-    # Set default metrics gauges
-    for f in db.query(EmissionFactor).all():
-        GAUGE_CARBON_INTENSITY.labels(region=f.region, source=f.source).set(f.gco2e_kwh)
-    db.close()
+        # 2. Seed default factors
+        db = SessionLocal()
+        try:
+            EmissionsCalculator.seed_default_factors_if_needed(db)
+            # Set default metrics gauges
+            for f in db.query(EmissionFactor).all():
+                GAUGE_CARBON_INTENSITY.labels(region=f.region, source=f.source).set(f.gco2e_kwh)
+        finally:
+            db.close()
+    except Exception as e:
+        print(f"Startup database initialization warning: {e}")
 
-    # 3. Start background telemetry collection if enabled
+    # 3. Start background telemetry collection if enabled (disabled in serverless)
     if settings.ENABLE_BACKGROUND_COLLECTOR:
         _bg_stop_event.clear()
         _bg_thread = threading.Thread(target=background_sampler_loop, daemon=True)
@@ -129,7 +136,8 @@ app.include_router(api_router, prefix="/api")
 
 # Static files for the web dashboard
 static_dir = os.path.join(os.path.dirname(__file__), "static")
-os.makedirs(static_dir, exist_ok=True)
+if not os.path.exists(static_dir):
+    os.makedirs(static_dir, exist_ok=True)
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 
@@ -138,7 +146,11 @@ def serve_dashboard():
     """Serve the single-page web dashboard."""
     index_file = os.path.join(static_dir, "index.html")
     if os.path.exists(index_file):
-        return FileResponse(index_file)
+        try:
+            with open(index_file, "r", encoding="utf-8") as f:
+                return HTMLResponse(content=f.read())
+        except Exception:
+            return FileResponse(index_file)
     return {"message": "Energy-to-CO2 Translation Engine API is running. Visit /docs for OpenAPI specifications."}
 
 

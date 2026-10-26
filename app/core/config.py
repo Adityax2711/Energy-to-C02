@@ -1,8 +1,9 @@
 """
 Core Application Configuration
 """
-from pydantic_settings import BaseSettings, SettingsConfigDict
+import os
 from typing import Optional
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -11,7 +12,11 @@ class Settings(BaseSettings):
     MODEL_VERSION: str = "v1.0.0-trapezoidal-traceable"
     
     # Database
-    DATABASE_URL: str = "sqlite:///./energy_to_co2.db"
+    DATABASE_URL: str = (
+        "sqlite:////tmp/energy_to_co2.db"
+        if (os.environ.get("VERCEL") or os.environ.get("VERCEL_ENV"))
+        else "sqlite:///./energy_to_co2.db"
+    )
     
     # Telemetry and Integration Policies
     DEFAULT_HOST: str = "node-alpha-01"
@@ -21,7 +26,7 @@ class Settings(BaseSettings):
     MIN_INTERVAL_SECONDS: float = 0.05  # Prevent absurdly small intervals causing division anomalies
     
     # Background Telemetry Collection
-    ENABLE_BACKGROUND_COLLECTOR: bool = True
+    ENABLE_BACKGROUND_COLLECTOR: bool = not bool(os.environ.get("VERCEL") or os.environ.get("VERCEL_ENV"))
     BACKGROUND_SAMPLE_INTERVAL_SECONDS: float = 2.0
     SIMULATED_POWER_ENABLED: bool = False  # If false and psutil is present, reads psutil; else simulation
     
